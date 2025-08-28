@@ -5,7 +5,7 @@ This project reads MLS listing data from `property_v2.csv` instead of a database
 ## What it does
 - Loads the raw CSV file
 - Keeps only rows with non-null `ClosePrice`
-- Splits data into train/test sets with an 80/20 ratio
+- Splits data into train/test sets (default 80/20)
 - Writes outputs to:
   - `data/train.csv`
   - `data/test.csv`
@@ -13,4 +13,9 @@ This project reads MLS listing data from `property_v2.csv` instead of a database
 ## Run
 ```bash
 python prepare_dataset.py
+```
+
+## Optional arguments
+```bash
+python prepare_dataset.py --input property_v2.csv --output-dir data --test-size 0.2 --random-state 42
 ```
