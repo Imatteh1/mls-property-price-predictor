@@ -26,9 +26,9 @@ def _load_report() -> dict:
 def _load_models():
     sold_path = MODEL_DIR / "sold_model.pkl"
     lease_path = MODEL_DIR / "lease_model.pkl"
-    if not sold_path.exists() or not lease_path.exists():
-        return None, None
-    return joblib.load(sold_path), joblib.load(lease_path)
+    sold_model = joblib.load(sold_path) if sold_path.exists() else None
+    lease_model = joblib.load(lease_path) if lease_path.exists() else None
+    return sold_model, lease_model
 
 
 def _apply_target_encoding(input_df: pd.DataFrame, metadata: dict) -> pd.DataFrame:

@@ -55,7 +55,7 @@ class TrainingResult:
 
 def _build_preprocessor() -> ColumnTransformer:
     numeric_pipeline = Pipeline(
-        steps=[("imputer", SimpleImputer(strategy="median"))]
+        steps=[("imputer", SimpleImputer(strategy="median", keep_empty_features=True))]
     )
     categorical_pipeline = Pipeline(
         steps=[
@@ -97,6 +97,7 @@ def _candidate_models() -> dict[str, object]:
             subsample=0.8,
             colsample_bytree=0.8,
             random_state=42,
+            verbosity=-1,
         )
 
     return candidates
@@ -132,9 +133,18 @@ def _train_best_model(X_train: pd.DataFrame, y_train: pd.Series, X_test: pd.Data
 
 
 def _prepare_training_frame(dataframe: pd.DataFrame, target_column: str) -> pd.DataFrame:
+    if dataframe.empty:
+        raise ValueError(f"No rows available for target '{target_column}'.")
+    if target_column not in dataframe.columns:
+        raise ValueError(f"Target column '{target_column}' not found.")
+
     cleaned = clean_base_dataframe(dataframe)
+    if target_column not in cleaned.columns:
+        raise ValueError(f"Target column '{target_column}' dropped during cleaning.")
     enriched = add_engineered_features(cleaned, target_column=target_column)
     filtered = remove_target_outliers(enriched, target_column=target_column)
+    if filtered.empty:
+        raise ValueError(f"No rows left for target '{target_column}' after filtering.")
     return filtered
 
 
@@ -175,11 +185,26 @@ def train_project(csv_path: Path, model_dir: Path, report_path: Path) -> dict[st
     split = split_by_status(raw_df)
 
     sold_pipeline, sold_result, sold_meta = _train_single_target(split.sold_df, target_column="ClosePrice")
-    lease_pipeline, lease_result, lease_meta = _train_single_target(split.lease_df, target_column="LeaseAmount")
 
     model_dir.mkdir(parents=True, exist_ok=True)
     joblib.dump(sold_pipeline, model_dir / "sold_model.pkl")
-    joblib.dump(lease_pipeline, model_dir / "lease_model.pkl")
+    lease_section: dict[str, object]
+    try:
+        lease_pipeline, lease_result, lease_meta = _train_single_target(split.lease_df, target_column="LeaseAmount")
+        joblib.dump(lease_pipeline, model_dir / "lease_model.pkl")
+        lease_section = {
+            "model": lease_result.model_name,
+            "metrics": asdict(lease_result.metrics),
+            "rows": int(len(split.lease_df)),
+            "metadata": lease_meta,
+            "status": "trained",
+        }
+    except ValueError as exc:
+        lease_section = {
+            "status": "skipped",
+            "reason": str(exc),
+            "rows": int(len(split.lease_df)),
+        }
 
     full_report = {
         "sold": {
@@ -187,13 +212,9 @@ def train_project(csv_path: Path, model_dir: Path, report_path: Path) -> dict[st
             "metrics": asdict(sold_result.metrics),
             "rows": int(len(split.sold_df)),
             "metadata": sold_meta,
+            "status": "trained",
         },
-        "lease": {
-            "model": lease_result.model_name,
-            "metrics": asdict(lease_result.metrics),
-            "rows": int(len(split.lease_df)),
-            "metadata": lease_meta,
-        },
+        "lease": lease_section,
         "active_rows": int(len(split.active_df)),
     }
 

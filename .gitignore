@@ -3,3 +3,4 @@ __pycache__/
 .venv/
 models/*.pkl
 reports/model_evaluation.json
+data/raw/*.csv
