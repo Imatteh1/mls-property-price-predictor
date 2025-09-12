@@ -47,6 +47,5 @@ streamlit run app/streamlit_app.py
 ```
 
 ## Notes
-- This implementation intentionally reads from CSV (not database) per your request.
 - If `xgboost` or `lightgbm` are unavailable, fallback model candidates are still trained.
 - SHAP plots require `shap` installed.
