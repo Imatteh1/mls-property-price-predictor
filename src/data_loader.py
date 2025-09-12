@@ -43,8 +43,11 @@ def normalize_status(dataframe: pd.DataFrame) -> pd.DataFrame:
 def split_by_status(dataframe: pd.DataFrame) -> MLSDataSplit:
     df = normalize_status(dataframe)
 
-    sold_mask = df["normalized_status"].isin(["SOLD", "SOLD_CONDITIONAL"]) & df["ClosePrice"].notna()
-    lease_mask = df["normalized_status"].isin(["LEASED", "LEASED_CONDITIONAL"]) & df["LeaseAmount"].notna()
+    close_price = df.get("ClosePrice", pd.Series(index=df.index, dtype=float))
+    lease_amount = df.get("LeaseAmount", pd.Series(index=df.index, dtype=float))
+
+    sold_mask = df["normalized_status"].isin(["SOLD", "SOLD_CONDITIONAL"]) & close_price.notna()
+    lease_mask = df["normalized_status"].isin(["LEASED", "LEASED_CONDITIONAL"]) & lease_amount.notna()
     active_mask = df["normalized_status"].isin(["ACTIVE", "NEW", "PRICE_CHANGE", "EXTENSION"])
 
     return MLSDataSplit(

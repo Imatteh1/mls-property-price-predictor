@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 
 import joblib
@@ -9,12 +10,16 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
 from src.data_loader import load_csv, split_by_status
 from src.features import CATEGORICAL_FEATURES, NUMERIC_FEATURES, clean_base_dataframe, coerce_feature_types
 
-MODEL_DIR = Path("models")
-REPORT_PATH = Path("reports/model_evaluation.json")
-DATA_PATH = Path("property_v2.csv")
+MODEL_DIR = PROJECT_ROOT / "models"
+REPORT_PATH = PROJECT_ROOT / "reports" / "model_evaluation.json"
+DATA_PATH = PROJECT_ROOT / "property_v2.csv"
 
 
 def _load_report() -> dict:
